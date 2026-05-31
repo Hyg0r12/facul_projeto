@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Mapa de Acidentes</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; }
+
+        #map { height: 100vh; width: 100%; }
+
+        #btnPainel {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 2000;
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(26, 115, 232, 0.4);
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+
+        #btnPainel:hover {
+            background: #1558b0;
+            transform: scale(1.05);
+        }
+
+        #painel {
+            position: fixed;
+            top: 0;
+            left: -320px;
+            width: 300px;
+            height: 100%;
+            background: #f0f4ff;
+            box-shadow: 4px 0 16px rgba(0,0,0,0.2);
+            z-index: 1999;
+            padding: 0;
+            overflow-y: auto;
+            transition: left 0.35s ease;
+        }
+
+        #painel.aberto { left: 0; }
+
+        #painel-header {
+            background: linear-gradient(135deg, #1a73e8, #0d47a1);
+            padding: 30px 20px 20px;
+            color: white;
+            text-align: center;
+        }
+
+        #painel-header h3 { margin: 0 0 5px; font-size: 20px; }
+
+        #perfilNome { font-size: 16px; font-weight: bold; margin: 0; }
+
+        #perfilEmail { font-size: 13px; opacity: 0.85; margin: 4px 0 0; }
+
+        #painel-corpo { padding: 20px; }
+
+        #painel-corpo h3 {
+            font-size: 15px;
+            color: #1a73e8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            border-bottom: 2px solid #1a73e8;
+            padding-bottom: 6px;
+        }
+
+        #listaMarcacoes { list-style: none; padding: 0; margin: 0; }
+
+        #listaMarcacoes li {
+            padding: 10px 12px;
+            margin-bottom: 10px;
+            background: white;
+            border-left: 4px solid #1a73e8;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #333;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        #listaMarcacoes li:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(26, 115, 232, 0.2);
+        }
+
+        .marcacao-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .marcacao-info strong {
+            color: #0d47a1;
+            font-size: 13px;
+        }
+
+        .marcacao-info small {
+            color: #666;
+        }
+
+        .marcacao-acoes {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .marcacao-acoes button {
+            flex: 1;
+            border: none;
+            border-radius: 7px;
+            color: white;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 7px;
+        }
+
+        .btn-editar { background: #1a73e8; }
+
+        .btn-excluir { background: #e53935; }
+
+        #modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(13, 71, 161, 0.35);
+            backdrop-filter: blur(4px);
+            z-index: 3000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #modal.aberto { display: flex; }
+
+        #modal-conteudo {
+            background: white;
+            border-radius: 20px;
+            width: 360px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(13, 71, 161, 0.3);
+            animation: subirCard 0.3s ease forwards;
+        }
+
+        #modal-header {
+            background: linear-gradient(135deg, #1a73e8, #0d47a1);
+            padding: 24px 28px;
+            color: white;
+        }
+
+        #modal-header h3 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+
+        #modal-header p {
+            margin: 5px 0 0;
+            font-size: 13px;
+            opacity: 0.8;
+        }
+
+        #modal-corpo {
+            padding: 22px 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        #modal-corpo label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #1a73e8;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+        }
+
+        #categorias {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .categoria {
+            padding: 10px 14px;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 10px;
+            cursor: pointer;
+            background: #fafafa;
+            font-size: 13px;
+            text-align: left;
+            transition: all 0.2s ease;
+            color: #333;
+        }
+
+        .categoria:hover {
+            border-color: #1a73e8;
+            background: #f0f4ff;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(26, 115, 232, 0.15);
+        }
+
+        .categoria.selecionado {
+            border-color: #1a73e8;
+            background: linear-gradient(135deg, #1a73e8, #0d47a1);
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(26, 115, 232, 0.35);
+        }
+
+        #descricaoAcidente {
+            padding: 12px;
+            border-radius: 10px;
+            border: 1.5px solid #e0e0e0;
+            resize: none;
+            height: 90px;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            color: #333;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            background: #fafafa;
+        }
+
+        #descricaoAcidente:focus {
+            outline: none;
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.15);
+            background: white;
+        }
+
+        #modal-botoes {
+            display: flex;
+            gap: 10px;
+            padding: 0 28px 24px;
+        }
+
+        #btnCancelar {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1.5px solid #e0e0e0;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+            color: #555;
+            transition: all 0.2s ease;
+        }
+
+        #btnCancelar:hover {
+            background: #f5f5f5;
+            border-color: #bbb;
+        }
+
+        #btnConfirmar {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            background: linear-gradient(135deg, #1a73e8, #0d47a1);
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(26, 115, 232, 0.35);
+        }
+
+        #btnConfirmar:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(26, 115, 232, 0.45);
+        }
+
+        .btn-localizacao {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(26, 115, 232, 0.4);
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+
+        .btn-localizacao:hover {
+            background: #1558b0;
+            transform: scale(1.05);
+        }
+
+        #btnSair {
+            width: 100%;
+            padding: 10px;
+            margin-top: 20px;
+            background: #e53935;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background 0.2s ease;
+        }
+
+        #btnSair:hover {
+            background: #b71c1c;
+        }
+
+    </style>
+</head>
+<body>
+
+    <button id="btnPainel">☰ Perfil</button>
+
+    <div id="painel">
+        <div id="painel-header">
+            <h3>Meu Perfil</h3>
+            <p id="perfilNome"></p>
+            <p id="perfilEmail"></p>
+        </div>
+        <div id="painel-corpo">
+        <h3>Minhas Marcações</h3>
+        <ul id="listaMarcacoes"></ul>
+        <button id="btnSair">Sair</button>
+    </div>
+    </div>
+
+   <div id="modal">
+        <div id="modal-conteudo">
+            <div id="modal-header">
+                <h3>Registrar Acidente</h3>
+                <p>Selecione a categoria e descreva o ocorrido</p>
+            </div>
+            <div id="modal-corpo">
+                <label>Categoria</label>
+                <div id="categorias">
+                    <button class="categoria" data-categoria="Batida" data-cor="red">🚗 Batida</button>
+                    <button class="categoria" data-categoria="Atropelamento" data-cor="orange">🚶 Atropelamento</button>
+                    <button class="categoria" data-categoria="Buraco na via" data-cor="yellow">🛣️ Buraco na via</button>
+                    <button class="categoria" data-categoria="Alagamento" data-cor="blue">🌊 Alagamento</button>
+                    <button class="categoria" data-categoria="Incêndio" data-cor="purple">🔥 Incêndio</button>
+                </div>
+                <label>Descrição</label>
+                <textarea id="descricaoAcidente" placeholder="Descreva o acidente..."></textarea>
+            </div>
+            <div id="modal-botoes">
+                <button id="btnCancelar">Cancelar</button>
+                <button id="btnConfirmar">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <script src="action.js"></script>
+
+</body>
+</html>

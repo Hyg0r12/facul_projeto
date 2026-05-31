@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Segurança</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="Stylex.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <h1>Dashboard de Segurança</h1>
+            <p>Sistema Inteligente de Monitoramento de Ocorrências</p>
+        </header>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-content">
+                    <div class="stat-info">
+                        <p class="stat-title">Total de Ocorrências</p>
+                        <p class="stat-value" id="totalOccurrences">0</p>
+                        <p class="stat-trend positive">
+                            <span class="trend-icon">↓</span>
+                            -12% vs mês anterior
+                        </p>
+                    </div>
+                    <div class="stat-icon alert">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-content">
+                    <div class="stat-info">
+                        <p class="stat-title">Tempo Médio de Resposta</p>
+                        <p class="stat-value">9 min</p>
+                        <p class="stat-trend positive">
+                            <span class="trend-icon">↓</span>
+                            -3 min vs mês anterior
+                        </p>
+                    </div>
+                    <div class="stat-icon clock">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-content">
+                    <div class="stat-info">
+                        <p class="stat-title">Regiões Monitoradas</p>
+                        <p class="stat-value">5</p>
+                    </div>
+                    <div class="stat-icon map">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                            <circle cx="12" cy="10" r="3"></circle>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAPA INTERATIVO -->
+        <div class="map-section">
+            <div class="map-sidebar">
+                <h2>Registrar Ocorrência</h2>
+                <div class="form-group">
+                    <label>Tipo de Incidente</label>
+                    <select id="incidentType">
+                        <option value="Batida">Batida</option>
+                        <option value="Atropelamento">Atropelamento</option>
+                        <option value="Buraco na via">Buraco na via</option>
+                        <option value="Alagamento">Alagamento</option>
+                        <option value="Incêndio">Incêndio</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Descrição</label>
+                    <textarea id="incidentDescription" rows="3" placeholder="Descreva o incidente..."></textarea>
+                </div>
+                <button id="addIncidentBtn" class="btn-primary">Adicionar ao Mapa</button>
+                <hr>
+                <p class="instruction-text">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                    Clique no mapa para selecionar a localização
+                </p>
+                <div class="stat-card-mini">
+                    <h3>Ocorrências Registradas</h3>
+                    <div id="registeredCount" class="stat-value-mini">0</div>
+                </div>
+                <div class="stat-card-mini">
+                    <h3>Tipos de Incidentes</h3>
+                    <div id="typeStats" style="font-size: 13px; margin-top: 8px;"></div>
+                </div>
+            </div>
+            <div id="map"></div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="charts-grid">
+            <!-- Occurrences by Region -->
+            <div class="chart-card">
+                <h2>Ocorrências por Região</h2>
+                <canvas id="regionChart"></canvas>
+            </div>
+
+            <!-- Incident Types -->
+            <div class="chart-card">
+                <h2>Tipos de Incidentes</h2>
+                <canvas id="incidentChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Heatmap and Response Time -->
+        <div class="chart-card heatmap-map-card">
+            <h2>Mapa de Calor das Ocorrências</h2>
+            <div id="dashboardHeatMap"></div>
+        </div>
+
+        <div class="charts-grid">
+            <!-- Heatmap -->
+            <div class="chart-card">
+                <h2>Áreas com Maior Incidência</h2>
+                <div class="heatmap-container" id="heatmapContainer"></div>
+            </div>
+
+            <!-- Response Time -->
+            <div class="chart-card">
+                <h2>Tempo de Resposta das Autoridades</h2>
+                <canvas id="responseChart"></canvas>
+                    <div class="info-box" id="insightBox"></div>
+                    <p><strong>Melhoria contínua:</strong> O tempo de resposta reduziu 25% nos últimos 5 meses</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <script src="https://leaflet.github.io/Leaflet.heat/dist/leaflet-heat.js"></script>
+    <script src="script (1).js"></script>
+</body>
+</html>

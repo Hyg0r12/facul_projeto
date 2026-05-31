@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redefinir Senha</title>
+    <link rel="stylesheet" href="Stylex.css">
+</head>
+<body>
+  <div class="container">
+
+    <h2>Recuperar Senha</h2>
+
+    <p>
+      Digite seu e-mail para receber um código de recuperação.
+    </p>
+
+    <!-- EMAIL -->
+    <div class="input-group">
+      <label>E-mail</label>
+      <input 
+        type="email" 
+        id="email" 
+        placeholder="Digite seu e-mail"
+      >
+    </div>
+
+    <button onclick="enviarCodigo()">
+      Enviar Código
+    </button>
+
+    <!-- CÓDIGO -->
+    <div class="codigo-area" id="codigoArea">
+
+      <div class="input-group">
+        <label>Código de 4 dígitos</label>
+        <input 
+          type="text" 
+          id="codigo"
+          maxlength="4"
+          placeholder="0000"
+        >
+      </div>
+
+      <div class="input-group">
+        <label>Nova Senha</label>
+        <input 
+          type="password" 
+          id="novaSenha"
+          placeholder="Digite a nova senha"
+        >
+      </div>
+
+      <button onclick="redefinirSenha()">
+        Redefinir Senha
+      </button>
+
+    </div>
+
+    <div class="mensagem" id="mensagem"></div>
+    </div>
+
+
+    <script src="redefinir.js"></script>
+</body>
+</html>
